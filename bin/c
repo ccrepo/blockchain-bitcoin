@@ -147,9 +147,16 @@ fi
 
 if [[ "${BITCOIN_VERSION}" == "" ]]
 then
-  echo "change to build branch"
-  git checkout -b bitcoin-build  remotes/origin/bitcoin-build
 
+  if [[ "${GITUSER}" == "${BITCOIN_GITUSER}" ]]
+  then
+    echo "change to build branch"
+    git checkout -b bitcoin-build  remotes/origin/bitcoin-build
+  else
+    echo "change to dev branch"
+    git checkout -b bitcoin-dev  remotes/origin/bitcoin-dev
+  fi
+  
   if [[ "$?" != "0" ]]
   then
     echo "error: could not change to bitcoin-build branch"
