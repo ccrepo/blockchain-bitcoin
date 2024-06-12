@@ -1,0 +1,208 @@
+#!/bin/bash
+
+# NOTE: default bitcoin.conf locations
+# Linux	/home/<username>/.bitcoin/bitcoin.conf
+# Mac OSX	/Users/<username>/Library/Application Support/Bitcoin/bitcoin.conf
+# Tree location ./share/examples/bitcoin.conf
+
+# =============================
+# FUNCTION
+# =============================
+
+usage () {
+  echo "$1 usage: -GITUSER <git username> -BITCOIN_GITUSER <bitcoin git username> -FULL_NODE (N|Y) -BITCOIN_VERSION [<git version>] "
+}
+
+# =============================
+# PREAMBLE
+# =============================
+
+if [[ "${OSTYPE}" != "linux-gnu"* && "${OSTYPE}" != "darwin"* ]]
+then
+  echo "error: only linux and macOS supported"
+  exit 1
+fi
+
+if [[ "$#" != "6" && "$#" != "7" && "$#" != "8" ]]
+then
+  usage "error: missing arguments."
+  exit 1
+fi
+
+if [[ "$1" != "-GITUSER" || "$2" == "" ]]
+then
+  usage "error: missing argument -GITUSER."
+  exit 1
+else
+  GITUSER=$2
+  echo "GITUSER '${GITUSER}'"
+fi
+
+if [[ "$3" != "-BITCOIN_GITUSER" || "$4" == "" ]]
+then
+  usage "error: missing argument -BITCOIN_GITUSER."
+  exit 1
+else
+  BITCOIN_GITUSER=$4
+  echo "BITCOIN_GITUSER '${BITCOIN_GITUSER}'"
+fi
+
+if [[ "$5" != "-FULL_NODE" || "$6" == "" ]]
+then
+  usage "error: missing argument -FULL_NODE."
+  exit 1
+else
+  FULL_NODE=$6
+  echo "FULL_NODE '${FULL_NODE}'"
+fi
+
+if [[ "$7" != "-BITCOIN_VERSION" && "$7" != "" ]]
+then
+  usage "error: missing argument -BITCOIN_VERSION."
+  exit 1
+else
+  BITCOIN_VERSION=$8
+  echo "BITCOIN_VERSION '${BITCOIN_VERSION}'"
+fi
+
+
+if [[ "$HOME" == "" ]]
+then
+  echo "error: variable HOME is not set"
+  exit 1
+else
+  echo "HOME '$HOME'"
+fi
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]
+then
+  DF_ARG1="-BK"
+  DF_ARG2="--output=source,avail"
+  DF_ARG3='$2'
+fi
+
+if [[ "$OSTYPE" == "darwin"* ]]
+then
+  DF_ARG1="-k"
+  DF_ARG3='$4'
+fi
+
+if [[ "${FULL_NODE}" == "Y" ]]
+then
+  DRIVE_LIMIT=900000000
+
+  DRIVE_SIZE="`( df -k ${DF_ARG1} $HOME/ ${DF_ARG2} 2>/dev/null) | awk \"{ print ${DF_ARG3} }\" | \
+   grep -vi Avail | sed -r  's/[K]+//g'`"
+
+  if [[ ${DRIVE_SIZE} -lt ${DRIVE_LIMIT} ]]
+  then
+    echo "error: drive is too small '$DRIVE_SIZE' < '$DRIVE_LIMIT' KB"
+    df -k -BK $HOME/
+    exit 1
+  fi
+fi
+
+# =============================
+# ACTION
+# =============================
+
+mkdir -p ./build/bitcoin
+
+cd ./build/bitcoin
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: could not change to directory build/bitcoin"
+  exit 1
+fi
+
+pwd
+
+rm -fr ./bitcoin
+
+cd ./bitcoin 2>/dev/null
+
+if [[ "$?" == "0" ]]
+then
+  echo "error: could not delete directory bitcoin"
+  exit 1
+fi
+
+if [[ "${BITCOIN_VERSION}" != "" ]]
+then
+  echo "clone of version '${BITCOIN_VERSION}'"
+  git clone https://github.com/$GITUSER/bitcoin.git -b "${BITCOIN_VERSION}" ./bitcoin
+else
+  echo "clone without version"
+  git clone https://github.com/$GITUSER/bitcoin.git ./bitcoin
+fi
+
+cd ./bitcoin
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: could not change to directory bitcoin"
+  exit 1
+fi
+
+if [[ "${BITCOIN_VERSION}" == "" ]]
+then
+  echo "change to build branch"
+  git checkout -b bitcoin-build  remotes/origin/bitcoin-build
+
+  if [[ "$?" != "0" ]]
+  then
+    echo "error: could not change to bitcoin-build branch"
+    exit 1
+  fi
+fi
+
+echo "building in directory `pwd`"
+
+echo "calling autogen"
+
+./autogen.sh
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: autogen failed."
+  exit 1
+fi
+
+echo "calling configure"
+
+./configure
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: configure failed."
+  exit 1
+fi
+
+echo "calling make"
+
+make
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: make failed."
+  exit 1
+fi
+
+make check
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: make check failed."
+  exit 1
+fi
+  
+make install
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: make install failed."
+  exit 1
+fi
+
+echo "ok"

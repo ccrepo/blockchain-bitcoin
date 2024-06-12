@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [[ "${OSTYPE}" != "linux-gnu"* ]]
+then
+  echo "error: only linux supported"
+  exit 1
+fi
+
+if [[ "$#" != "0" ]]
+then
+  echo "error: invalid aguments."
+  exit 1
+fi
+
+/usr/local/bin/bitcoin -regtest -d
+
+if [[ "$?" != "0" ]]
+then
+  echo "error: bitcoin process start failed."
+  exit 1
+fi
+
+echo "started."
