@@ -131,10 +131,10 @@ fi
 if [[ "${BITCOIN_VERSION}" != "" ]]
 then
   echo "clone of version '${BITCOIN_VERSION}'"
-  git clone https://github.com/$GITUSER/bitcoin.git -b "${BITCOIN_VERSION}" ./bitcoin
+  git clone https://github.com/${BITCOIN_GITUSER}/bitcoin.git -b "${BITCOIN_VERSION}" ./bitcoin
 else
   echo "clone without version"
-  git clone https://github.com/$GITUSER/bitcoin.git ./bitcoin
+  git clone https://github.com/${BITCOIN_GITUSER}/bitcoin.git ./bitcoin
 fi
 
 cd ./bitcoin
@@ -213,3 +213,4 @@ then
 fi
 
 echo "ok"
+  
