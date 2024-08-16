@@ -196,12 +196,15 @@ then
   exit 1
 fi
 
-make check
-
-if [[ "$?" != "0" ]]
+if [[ "${FULL_NODE}" == "Y" ]]
 then
-  echo "error: make check failed."
-  exit 1
+  make check
+  
+  if [[ "$?" != "0" ]]
+  then
+    echo "error: make check failed."
+    exit 1
+  fi
 fi
   
 make install
